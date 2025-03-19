@@ -1,5 +1,5 @@
 from graphics import Line, Point
-import time
+import time, random
 
 class Cell:
     def __init__(self, win=None):
@@ -12,24 +12,33 @@ class Cell:
         self._y1 = None
         self._y2 = None
         self._win = win
+        self.visited = False
     
     def draw(self, x1, y1, x2, y2):
         self._x1 = x1
         self._x2 = x2
         self._y1 = y1
         self._y2 = y2
+        l = Line(Point(self._x1, self._y1), Point(self._x1, self._y2))
         if self.has_left_wall:
-            l = Line(Point(self._x1, self._y1), Point(self._x1, self._y2))
             self._win.draw_line(l)
+        else:
+            self._win.draw_line(l, "white")
+        l = Line(Point(self._x1, self._y1), Point(self._x2, self._y1))
         if self.has_top_wall:
-            l = Line(Point(self._x1, self._y1), Point(self._x2, self._y1))
             self._win.draw_line(l)
+        else:
+            self._win.draw_line(l, "white")
+        l = Line(Point(self._x2, self._y1), Point(self._x2, self._y2))
         if self.has_right_wall:
-            l = Line(Point(self._x2, self._y1), Point(self._x2, self._y2))
             self._win.draw_line(l)
+        else:
+            self._win.draw_line(l, "white")
+        l = Line(Point(self._x1, self._y2), Point(self._x2, self._y2))
         if self.has_bottom_wall:
-            l = Line(Point(self._x1, self._y2), Point(self._x2, self._y2))
             self._win.draw_line(l)
+        else:
+            self._win.draw_line(l, "white")
         
     def draw_move(self, to_cell, undo=False):
         color = "red"
@@ -39,7 +48,7 @@ class Cell:
         self._win.draw_line(l, color)
 
 class Maze:
-    def __init__(self, x1, y1, num_cols, num_rows, cell_size_x, cell_size_y, win=None):
+    def __init__(self, x1, y1, num_cols, num_rows, cell_size_x, cell_size_y, win=None, seed=None):
         self._x1 = x1
         self._y1 = y1
         self._num_rows = num_rows
@@ -48,7 +57,13 @@ class Maze:
         self._cell_size_y = cell_size_y
         self._win = win
         self._cells = []
+        self._seed = seed
         self._create_cells()
+        self._break_entrance_and_exit()
+        self._break_walls_r(0,0)
+        self._reset_cells_visited()
+        if self._seed != None:
+            random.seed(self._seed)
 
     def _create_cells(self):
         for i in range(self._num_cols):
@@ -75,6 +90,100 @@ class Maze:
             return
         self._win.redraw()
         time.sleep(0.05)
+
+    def _break_entrance_and_exit(self):
+        self._cells[0][0].has_top_wall = False
+        self._draw_cell(0,0)
+        self._cells[self._num_cols - 1][self._num_rows - 1].has_bottom_wall = False
+        self._draw_cell(self._num_cols - 1, self._num_rows - 1)
+
+    def _break_walls_r(self, i, j):
+        self._cells[i][j].visited = True
+        while True:
+            to_go = []
+            if j - 1 >= 0: 
+                if self._cells[i][j-1].visited == False:
+                    to_go.append((i, j-1))
+            if i + 1 < self._num_cols:  
+                if self._cells[i+1][j].visited == False:
+                    to_go.append((i+1, j))
+            if j + 1 < self._num_rows:  
+                if self._cells[i][j+1].visited == False:
+                    to_go.append((i, j+1))
+            if i - 1 >= 0: 
+                if self._cells[i-1][j].visited == False:
+                    to_go.append((i-1, j))
+            if len(to_go) == 0:
+                self._draw_cell(i,j)
+                return
+            dest = random.randrange(0, len(to_go))
+            x, y = to_go[dest][0], to_go[dest][1]
+            if y < j and x == i:
+                self._cells[i][j].has_top_wall = False
+                self._cells[x][y].has_bottom_wall = False
+                self._draw_cell(i,j)
+            elif x > i and j == y:
+                self._cells[i][j].has_right_wall = False
+                self._cells[x][y].has_left_wall = False
+                self._draw_cell(i,j)
+            elif y > j and x == i:
+                self._cells[i][j].has_bottom_wall = False
+                self._cells[x][y].has_top_wall = False
+                self._draw_cell(i,j)
+            else:
+                self._cells[i][j].has_left_wall = False
+                self._cells[x][y].has_right_wall = False
+                self._draw_cell(i,j)
+            self._break_walls_r(x,y)
+
+    def _reset_cells_visited(self):
+        for i in range(self._num_cols):
+            for j in range(self._num_rows):
+                self._cells[i][j].visited = False
+    
+    def solve(self):
+        return self._solve_dfs(0,0)
+
+    def _solve_dfs(self, i, j):
+        self._animate()
+        self._cells[i][j].visited = True
+        if i == self._num_cols - 1 and j == self._num_rows - 1:
+            return True
+        if j - 1 >= 0: 
+            if self._cells[i][j-1].visited == False and self._cells[i][j].has_top_wall == False:
+                self._cells[i][j].draw_move(self._cells[i][j-1])
+                res = self._solve_dfs(i, j-1)
+                if res:
+                    return True
+                self._cells[i][j].draw_move(self._cells[i][j-1], undo=True)
+        if i + 1 < self._num_cols:  
+            if self._cells[i+1][j].visited == False and self._cells[i][j].has_right_wall == False:
+                self._cells[i][j].draw_move(self._cells[i+1][j])
+                res = self._solve_dfs(i+1, j)
+                if res:
+                    return True
+                self._cells[i][j].draw_move(self._cells[i+1][j], undo=True)
+        if j + 1 < self._num_rows:  
+            if self._cells[i][j+1].visited == False and self._cells[i][j].has_bottom_wall == False:
+                self._cells[i][j].draw_move(self._cells[i][j+1])
+                res = self._solve_dfs(i, j+1)
+                if res:
+                    return True
+                self._cells[i][j].draw_move(self._cells[i][j+1], undo=True)
+        if i - 1 >= 0: 
+            if self._cells[i-1][j].visited == False and self._cells[i][j].has_left_wall == False:
+                self._cells[i][j].draw_move(self._cells[i-1][j])
+                res = self._solve_dfs(i-1, j)
+                if res:
+                    return True
+                self._cells[i][j].draw_move(self._cells[i-1][j], undo=True)
+        return False
+        
+
+
+
+            
+
 
 
 
