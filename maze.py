@@ -45,7 +45,7 @@ class Cell:
         if undo:
             color = "gray"
         l = Line(Point((self._x1 + self._x2)/2, (self._y1 + self._y2)/2), Point((to_cell._x1 + to_cell._x2)/2, (to_cell._y1 + to_cell._y2)/2))
-        self._win.draw_line(l, color)
+        self._win.draw_line(l, color, is_path=True)
 
 class Maze:
     def __init__(self, x1, y1, num_cols, num_rows, cell_size_x, cell_size_y, win=None, seed=None):
@@ -137,10 +137,17 @@ class Maze:
             for j in range(self._num_rows):
                 self._cells[i][j].visited = False
     
-    def solve(self):
+    def solve(self, algo_type):
         l = Line(Point(self._x1 + self._cell_size_x/2, self._y1 + self._cell_size_y/2), Point(self._x1 + self._cell_size_x/2, self._y1 - self._cell_size_y/2))
         self._win.draw_line(l, "red")
-        res = self._solve_bfs(0,0)
+
+        if algo_type == "Breadth-First-Search":
+            res = self._solve_bfs(0,0)
+        elif algo_type == "Depth-First-Search":
+            res = self._solve_dfs_r(0,0)
+        else:
+            print("fy")
+
         l = Line(Point(self._x1 + self._cell_size_x * (self._num_cols - 0.5), self._y1 + self._cell_size_y * (self._num_rows - 0.5)), Point(self._x1 + self._cell_size_x * (self._num_cols - 0.5), self._y1 + self._cell_size_y * (self._num_rows + 0.5)))
         self._win.draw_line(l, "red")
         return res

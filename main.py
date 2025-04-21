@@ -1,19 +1,10 @@
-from graphics import Window
+from window import Window
 from maze import *
-from config import *
 
 def main():
     
     win = Window()
     win.wait_for_close()
-    
-    maze = Maze(win.input['Margin'],
-                win.input['Margin'], 
-                win.input['Number of columns'], 
-                win.input['Number of rows'], 
-                win.input['Cell width'], 
-                win.input['Cell height'],
-                win)
     
     win.wait_for_close()
 
