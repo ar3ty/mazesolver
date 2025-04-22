@@ -89,7 +89,7 @@ class Maze:
         if self._win == None: 
             return
         self._win.redraw()
-        time.sleep(0.05)
+        time.sleep(0.01)
 
     def _break_entrance_and_exit(self):
         self._cells[0][0].has_top_wall = False
@@ -139,17 +139,18 @@ class Maze:
     
     def solve(self, algo_type):
         l = Line(Point(self._x1 + self._cell_size_x/2, self._y1 + self._cell_size_y/2), Point(self._x1 + self._cell_size_x/2, self._y1 - self._cell_size_y/2))
-        self._win.draw_line(l, "red")
+        self._win.draw_line(l, "red", is_path=True)
 
         if algo_type == "Breadth-First-Search":
             res = self._solve_bfs(0,0)
         elif algo_type == "Depth-First-Search":
             res = self._solve_dfs_r(0,0)
         else:
-            print("fy")
+            return "fy"
 
         l = Line(Point(self._x1 + self._cell_size_x * (self._num_cols - 0.5), self._y1 + self._cell_size_y * (self._num_rows - 0.5)), Point(self._x1 + self._cell_size_x * (self._num_cols - 0.5), self._y1 + self._cell_size_y * (self._num_rows + 0.5)))
-        self._win.draw_line(l, "red")
+        self._win.draw_line(l, "red", is_path=True)
+        self._reset_cells_visited()
         return res
     
     def _solve_dfs_r(self, i, j):
