@@ -1,5 +1,6 @@
 from graphics import Line, Point
 import time, random
+from myheap import MyMinHeap
 
 class Cell:
     def __init__(self, win=None):
@@ -145,6 +146,8 @@ class Maze:
             res = self._solve_bfs(0,0)
         elif algo_type == "Depth-First-Search":
             res = self._solve_dfs_r(0,0)
+        elif algo_type == "A *":
+            res = self._solve_a_star(0,0)
         else:
             return "fy"
 
@@ -223,6 +226,56 @@ class Maze:
                     self._cells[i][j].draw_move(self._cells[i-1][j], undo=True)
                     self._animate()
                     to_visit.insert(0,(i-1,j))
+                    paths[(i-1,j)] = (i,j)
+        if res == True:
+            current = (self._num_cols - 1, self._num_rows - 1)
+            while current != (0,0):
+                previous = paths[current]
+                self._cells[current[0]][current[1]].draw_move(self._cells[previous[0]][previous[1]])
+                current = previous
+        return res
+    
+    def _solve_a_star(self, x, y):
+        self._animate()
+        to_visit = MyMinHeap()
+        priority = (self._num_cols - x) ** 2  + (self._num_rows - y) ** 2
+        to_visit.push(priority, x, y, 0)
+        paths = {}
+        res = False
+        while not to_visit.is_empty():
+            i, j, current_cost = to_visit.pop()
+            current_cost += 1
+            self._cells[i][j].visited = True
+            if i == self._num_cols - 1 and j == self._num_rows - 1:
+                res = True
+                break
+            if j - 1 >= 0: 
+                if self._cells[i][j-1].visited == False and self._cells[i][j].has_top_wall == False:
+                    self._cells[i][j].draw_move(self._cells[i][j-1], undo=True)
+                    self._animate()
+                    priority = (self._num_cols - i) ** 2  + (self._num_rows - j + 1) ** 2 + current_cost
+                    to_visit.push(priority, i, j-1, current_cost)
+                    paths[(i,j-1)] = (i,j)
+            if i + 1 < self._num_cols:  
+                if self._cells[i+1][j].visited == False and self._cells[i][j].has_right_wall == False:
+                    self._cells[i][j].draw_move(self._cells[i+1][j], undo=True)
+                    self._animate()
+                    priority = (self._num_cols - i - 1) ** 2  + (self._num_rows - j) ** 2 + current_cost
+                    to_visit.push(priority, i+1, j, current_cost)
+                    paths[(i+1,j)] = (i,j)
+            if j + 1 < self._num_rows:  
+                if self._cells[i][j+1].visited == False and self._cells[i][j].has_bottom_wall == False:
+                    self._cells[i][j].draw_move(self._cells[i][j+1], undo=True)
+                    self._animate()
+                    priority = (self._num_cols - i) ** 2  + (self._num_rows - j - 1) ** 2 + current_cost
+                    to_visit.push(priority, i, j+1, current_cost)
+                    paths[(i,j+1)] = (i,j)
+            if i - 1 >= 0: 
+                if self._cells[i-1][j].visited == False and self._cells[i][j].has_left_wall == False:
+                    self._cells[i][j].draw_move(self._cells[i-1][j], undo=True)
+                    self._animate()
+                    priority = (self._num_cols - i + 1) ** 2  + (self._num_rows - j) ** 2 + current_cost
+                    to_visit.push(priority, i-1, j, current_cost)
                     paths[(i-1,j)] = (i,j)
         if res == True:
             current = (self._num_cols - 1, self._num_rows - 1)

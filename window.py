@@ -28,9 +28,10 @@ class Window:
     def __reinit(self):
         self.__root.destroy()
         self.__root = Tk()
+        self.__root.protocol("WM_DELETE_WINDOW", self.close)
         self.__root.title("mazesolver")
-        height = 2 * self.input["Margin"] + self.input["Number of rows"] * self.input["Cell width"]
-        width = 2 * self.input["Margin"] + self.input["Number of columns"] * self.input["Cell height"]
+        height = 2 * self.input["Margin"] + self.input["Number of rows"] * self.input["Cell height"]
+        width = 2 * self.input["Margin"] + self.input["Number of columns"] * self.input["Cell width"]
         self.__canvas = Canvas(self.__root, bg="white", height=height, width=width)
         self.__canvas.pack(fill=BOTH, expand=1)
         self.__running = False
@@ -63,10 +64,12 @@ class Window:
 
     def __choose_algorithm(self):
         self.__new_win = Toplevel()
+        self.__new_win.protocol("WM_DELETE_WINDOW", self.close)
         self.__new_win.title("Algorithm")
         self.__new_win.geometry("200x150")
         algos = ["Breadth-First-Search",
-                 "Depth-First-Search"]
+                 "Depth-First-Search",
+                 "A *"]
 
         self.combobox = ttk.Combobox(self.__new_win, values=algos)
         self.combobox.current(1)
