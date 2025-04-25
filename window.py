@@ -11,33 +11,24 @@ class Window:
             "Cell width" : "50",
             "Cell height" : "50",
         }
-        self.__initialize()
-
-    def __initialize(self):
         self.__root = Tk()
         self.__root.title("mazesolver")
-        self.__running = False
+        self.__root.protocol("WM_DELETE_WINDOW", self.__close)
         self.__is_solved = False
-        self.values_are_assigned = False
-        self.__root.protocol("WM_DELETE_WINDOW", self.close)
+        self._is_closing = False
         self.__assign_values_window()
-        self.wait_for_close()
 
 ##maze_and_algorithm
     
     def __reinit(self):
-        self.__root.destroy()
-        self.__root = Tk()
-        self.__root.protocol("WM_DELETE_WINDOW", self.close)
-        self.__root.title("mazesolver")
+        for widget in self.__root.winfo_children():
+            widget.destroy()
         height = 2 * self.input["Margin"] + self.input["Number of rows"] * self.input["Cell height"]
         width = 2 * self.input["Margin"] + self.input["Number of columns"] * self.input["Cell width"]
+        self.__root.geometry(f"{width}x{height}")
         self.__canvas = Canvas(self.__root, bg="white", height=height, width=width)
         self.__canvas.pack(fill=BOTH, expand=1)
-        self.__running = False
-        self.values_are_assigned = False
         self.algorithm = None
-        self.__root.protocol("WM_DELETE_WINDOW", self.close)
         self.maze = Maze(self.input['Margin'],
                 self.input['Margin'], 
                 self.input['Number of columns'], 
@@ -46,7 +37,6 @@ class Window:
                 self.input['Cell height'],
                 self)
         self.__choose_algorithm()
-        self.wait_for_close()
 
     def __solve_maze(self):
         if self.__is_solved == True:
@@ -59,13 +49,14 @@ class Window:
 
     def __rebuild(self):
         self.__new_win.destroy()
-        self.__root.destroy()
-        self.__initialize()
+        for widget in self.__root.winfo_children():
+            widget.destroy()
+        self.__assign_values_window()
 
     def __choose_algorithm(self):
         self.__new_win = Toplevel()
-        self.__new_win.protocol("WM_DELETE_WINDOW", self.close)
         self.__new_win.title("Algorithm")
+        self.__new_win.protocol("WM_DELETE_WINDOW", self.__close)
         self.__new_win.geometry("200x150")
         algos = ["Breadth-First-Search",
                  "Depth-First-Search",
@@ -84,24 +75,27 @@ class Window:
     
 ##initial_logic
 
+    def __close(self):
+        if hasattr(self, "__new_win"):
+            self.__new_win.destroy()
+        self._is_closing = True
+        self.__root.after(100, self.__exit)
+        
+    def __exit(self):
+        self.__root.destroy()
+        exit(0)
+
+    def draw_line(self, line, fill_color="black", is_path=False):
+        if self._is_closing:
+            return
+        line.draw(self.__canvas, fill_color, is_path)
+
     def redraw(self):
         self.__root.update_idletasks()
         self.__root.update()
 
-    def draw_line(self, line, fill_color="black", is_path=False):
-        line.draw(self.__canvas, fill_color, is_path)
-
-    ##SMTH IS WRONG WITH LOGIC
     def wait_for_close(self):
-        self.__running = True
-        while self.__running and not self.values_are_assigned: 
-            self.redraw()
-        if self.values_are_assigned:
-            self.__reinit()
-
-    def close(self):
-        self.__running = False
-
+        self.__root.mainloop()
 
 ##config_window
 
@@ -130,9 +124,11 @@ class Window:
             or self.input["Number of columns"] * self.input["Number of rows"] > 1024):
             return self.throw_error()
 
-        self.values_are_assigned = True
+        self.__reinit()
 
     def __assign_values_window(self):
+        for widget in self.__root.winfo_children():
+            widget.destroy()
         self.__root.geometry("200x250")
         self.__root.resizable(0, 0)
         self.label0 = ttk.Label(self.__root, text="Insert maze properties", font=("Helvetica", 10, "bold"))
